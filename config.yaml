@@ -1,0 +1,33 @@
+seed: 42
+
+dataset:
+  name: RadioML2016.10a
+  num_classes: 11
+  input_length: 128
+
+split:
+  train: 0.70
+  validation: 0.15
+  test: 0.15
+
+tasks:
+  task_1:
+    snr: [10, 12, 14, 16, 18]
+
+  task_2:
+    snr: [0, 2, 4, 6, 8]
+
+  task_3:
+    snr: [-10, -8, -6, -4, -2]
+
+  task_4:
+    snr: [-20, -18, -16, -14, -12]
+
+training:
+  batch_size: 128
+  epochs: 10
+  learning_rate: 0.001
+  weight_decay: 0.0001
+
+replay:
+  memory_size: 2000
