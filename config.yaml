@@ -1,19 +1,46 @@
 # =============================================================================
-# config.yaml  (shared file)
-#
-# Person 2 owns ONLY the model/training-related keys below.
-# Do not add data-pipeline or evaluation keys here without agreeing with the
-# other developers first (this file is shared).
+# RF-CL: Continual Learning for RF Modulation Classification
+# Shared experiment configuration
 # =============================================================================
 
 # ---- Reproducibility --------------------------------------------------------
 seed: 42
 
+# ---- Dataset ----------------------------------------------------------------
+dataset:
+  name: RadioML2016.10a
+  num_classes: 11
+  input_length: 128
+
 # ---- Problem definition -----------------------------------------------------
-# RadioML 2016.10a has 11 modulation classes. The classifier depends on x only.
 num_classes: 11
 
-# ---- Model (RFClassifier) ---------------------------------------------------
+# ---- Fixed train/validation/test split --------------------------------------
+split:
+  train: 0.70
+  validation: 0.15
+  test: 0.15
+
+# ---- Sequential SNR domains -------------------------------------------------
+# Domain-incremental learning:
+# same 11-class label space, changing SNR domain.
+tasks:
+  task_1:
+    snr: [12, 14, 16, 18]
+
+  task_2:
+    snr: [4, 6, 8, 10]
+
+  task_3:
+    snr: [-4, -2, 0, 2]
+
+  task_4:
+    snr: [-12, -10, -8, -6]
+
+  task_5:
+    snr: [-20, -18, -16, -14]
+
+# ---- Model ------------------------------------------------------------------
 model:
   in_channels: 2
   conv_channels: [64, 64, 128]
@@ -25,20 +52,30 @@ model:
 # ---- Training ---------------------------------------------------------------
 training:
   batch_size: 128
-  epochs: 50
-  optimizer: adam           # adam | adamw | sgd
-  learning_rate: 0.001
-  weight_decay: 0.0
-  momentum: 0.9             # used only when optimizer == sgd
-  early_stopping_patience: 10   # epochs with no val improvement before stopping; <=0 disables
-  grad_clip_norm: 0.0       # max grad norm; 0 disables clipping
-  num_workers: 0            # DataLoader workers (0 -> deterministic, no worker seeding needed)
+  epochs: 10
   optimizer: adam
+  learning_rate: 0.001
+  weight_decay: 0.0001
   momentum: 0.9
   early_stopping_patience: 3
   grad_clip_norm: 0.0
   num_workers: 0
-  output_dir: results
+
+# ---- Replay -----------------------------------------------------------------
+replay:
+  memory_size: 2000
+  methods:
+    - random
+    - snr_aware
+
+# ---- Evaluation -------------------------------------------------------------
+evaluation:
+  num_classes: 11
+  compute_macro_f1: true
+  compute_per_class_accuracy: true
+  compute_confusion_matrix: true
+  compute_average_accuracy: true
+  compute_average_forgetting: true
 
 # ---- Experiment I/O ---------------------------------------------------------
 output_dir: results
