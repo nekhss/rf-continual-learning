@@ -34,3 +34,6 @@ results/figures/*
 
 # Secrets
 .env
+
+# Experiment outputs
+results/

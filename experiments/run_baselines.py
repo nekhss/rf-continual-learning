@@ -75,23 +75,23 @@ def build_task_loaders(task_datasets, config: dict, seed: int) -> List[Dict]:
     return loaders
 
 
-def build_real_tasks(config: dict):  # pragma: no cover - depends on Person 1
-    """Hook for the real RadioML pipeline (owned by Person 1, src/data/).
+def build_real_tasks(config: dict):
+    """Build the five real RadioML task datasets using src.data."""
+    from src.data import get_task_dataset
 
-    Expected to return a list of ``{"train", "val", "test"}`` *datasets*
-    (torch Datasets yielding the agreed {x, y, snr, task} dict). Wire this up
-    once the interface is finalised -- do NOT modify src/data/ from here.
-    """
-    try:
-        from src.data import build_tasks  # type: ignore  # noqa: F401
-    except Exception as exc:  # ImportError or anything else while it is WIP
-        raise SystemExit(
-            "Real data pipeline not available yet (src/data/). "
-            "Run with '--data synthetic' for now.\n"
-            f"Underlying error: {exc}"
-        )
-    return build_tasks(config)  # type: ignore[name-defined]
+    task_ids = sorted(
+    int(str(task_id).replace("task_", ""))
+    for task_id in config["tasks"].keys()
+)
 
+    return [
+        {
+            "train": get_task_dataset(task_id, "train"),
+            "val": get_task_dataset(task_id, "val"),
+            "test": get_task_dataset(task_id, "test"),
+        }
+        for task_id in task_ids
+    ]
 
 # --------------------------------------------------------------------------- #
 # Serialization helpers
