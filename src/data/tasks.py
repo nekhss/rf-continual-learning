@@ -1,40 +1,36 @@
 """
 Domain-incremental task definitions for RF-CL.
 
-Four tasks are defined purely in terms of *SNR ranges*. The label space
-(the 11 modulation classes) is identical across all tasks -- only the
-input distribution (SNR / noise level) changes. This is what makes the
-benchmark domain-incremental rather than class-incremental: a class-
-incremental split would instead partition the 11 *classes* across tasks,
-which we deliberately do not do here.
+The benchmark contains five sequential SNR domains. All tasks share the
+same 11-class modulation label space; only the SNR/input distribution
+changes.
 
-Task 1 (highest SNR / easiest):   10, 12, 14, 16, 18 dB
-Task 2:                             0,  2,  4,  6,  8 dB
-Task 3:                           -10, -8, -6, -4, -2 dB
-Task 4 (lowest SNR / hardest):   -20,-18,-16,-14,-12 dB
+Task 1: [12, 14, 16, 18] dB
+Task 2: [4, 6, 8, 10] dB
+Task 3: [-4, -2, 0, 2] dB
+Task 4: [-12, -10, -8, -6] dB
+Task 5: [-20, -18, -16, -14] dB
+
+This is domain-incremental learning, not class-incremental learning.
 """
 
 from typing import Dict, List
 
+
 TASK_SNR_RANGES: Dict[int, List[int]] = {
-    1: [10, 12, 14, 16, 18],
-    2: [0, 2, 4, 6, 8],
-    3: [-10, -8, -6, -4, -2],
-    4: [-20, -18, -16, -14, -12],
+    1: [12, 14, 16, 18],
+    2: [4, 6, 8, 10],
+    3: [-4, -2, 0, 2],
+    4: [-12, -10, -8, -6],
+    5: [-20, -18, -16, -14],
 }
 
 NUM_TASKS = len(TASK_SNR_RANGES)
 
-# Full expected SNR grid for RadioML2016.10a (-20 to +18 dB, 2 dB steps).
-# Used only for *validation/reporting* against what's actually found in the
-# downloaded dataset -- never for hard-coding sample counts.
 EXPECTED_SNR_VALUES: List[int] = sorted(
     snr for snrs in TASK_SNR_RANGES.values() for snr in snrs
 )
 
-# The 11 RadioML2016.10a modulation classes, canonical (sorted) form.
-# Used only to validate what's found in the dataset -- the actual class
-# list used at runtime always comes from inspecting the data itself.
 EXPECTED_CLASS_NAMES: List[str] = sorted(
     [
         "8PSK",
@@ -53,26 +49,34 @@ EXPECTED_CLASS_NAMES: List[str] = sorted(
 
 
 def snr_to_task(snr: int) -> int:
-    """Map a raw SNR value (dB) to its task id (1-4). Raises if the SNR
-    does not belong to any defined task (e.g. dataset has extra SNRs we
-    were not told to include)."""
+    """Map an SNR value in dB to its RF-CL task ID."""
     for task_id, snrs in TASK_SNR_RANGES.items():
         if snr in snrs:
             return task_id
+
     raise ValueError(
-        f"SNR={snr} is not assigned to any of the 4 defined tasks "
-        f"({TASK_SNR_RANGES}). If the dataset contains SNR values outside "
-        f"this grid, decide explicitly whether to extend a task's range or "
-        f"exclude those examples -- do not silently drop or reassign them."
+        f"SNR={snr} is not assigned to any RF-CL task "
+        f"({TASK_SNR_RANGES})."
     )
 
 
 def validate_task_definition() -> None:
-    """Sanity-check the task definition itself (not the dataset)."""
-    assert len(TASK_SNR_RANGES) == 4, "Expected exactly 4 tasks."
+    """Validate the five-task RF-CL benchmark definition."""
+    assert NUM_TASKS == 5, f"Expected 5 tasks, got {NUM_TASKS}"
+
     seen = set()
+
     for task_id, snrs in TASK_SNR_RANGES.items():
-        assert len(snrs) == 5, f"Task {task_id} expected 5 SNR values, got {len(snrs)}"
-        for s in snrs:
-            assert s not in seen, f"SNR {s} assigned to more than one task!"
-            seen.add(s)
+        assert len(snrs) == 4, (
+            f"Task {task_id} expected 4 SNR values, got {len(snrs)}"
+        )
+
+        for snr in snrs:
+            assert snr not in seen, (
+                f"SNR {snr} assigned to more than one task"
+            )
+            seen.add(snr)
+
+    assert seen == set(range(-20, 20, 2)), (
+        f"Unexpected SNR coverage: {sorted(seen)}"
+    )
